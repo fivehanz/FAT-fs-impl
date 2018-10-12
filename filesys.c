@@ -118,6 +118,13 @@ void format ( )
   /* prepare root directory
   * write root directory block to virtual disk
   */
+  for (int i = 0; i < BLOCKSIZE; i++) block.data[i] = '\0';
+  block.dir.isdir = 1;
+  block.dir.nextEntry = 0;
+
+  writeblock(&block, 3);
+
+  rootDirIndex = 3;
 
 
 }
