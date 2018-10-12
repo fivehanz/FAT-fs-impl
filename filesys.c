@@ -70,20 +70,18 @@ void writeblock ( diskblock_t * block, int block_address )
  *              - each block can hold (BLOCKSIZE / sizeof(fatentry_t)) fat entries
  */
 
-
- void copyFAT(fatentry_t *FAT, unsigned int numOfFatBlocks) {
-   diskblock_t block;
-   unsigned int i,j,index;
-   printf("%d\n", numOfFatBlocks);
-   for (i = 1; i < numOfFatBlocks; i++) {
-     for (j = 0; j < FATENTRYCOUNT; j++) {
-       block.fat[i] = FAT[index];
-       ++index;
-     }
-
-     writeblock(&block, i);
-   }
- }
+void copyFAT() {
+  diskblock_t block;
+  unsigned int numOfFatBlocks;
+  numOfFatBlocks = (unsigned int)(MAXBLOCKS/FATENTRYCOUNT);
+  int i, j;
+  for (i = 0; i < numOfFatBlocks; i++) {
+    for (j = 0; j < FATENTRYCOUNT; j++) {
+      block.fat[j] = FAT[((i*FATENTRYCOUNT)+j)];
+    }
+    writeblock(&block, i + 1);
+  }
+}
 
 /* implement format()
  */
@@ -102,26 +100,26 @@ void format ( )
   for (int i = 0; i < BLOCKSIZE; i++) block.data[i] = '\0';
   strcpy(block.data, "CS3026 Operating Systems Assesment");
   writeblock(&block, 0);
-  FAT[0] = ENDOFCHAIN;
 
   /* prepare FAT table
   * write FAT blocks to virtual disk
   */
-  for (int i = 0; i < BLOCKSIZE; i++) block.data[i] = UNUSED;
+  for (int i = 0; i < BLOCKSIZE; i++) FAT[i] = UNUSED;
+  FAT[0] = ENDOFCHAIN;
+  FAT[1] = 2;
+  FAT[2] = ENDOFCHAIN;
 
+  FAT[3] = ENDOFCHAIN;
 
-  unsigned int numOfFatBlocks;
-  numOfFatBlocks = (unsigned int)(MAXBLOCKS+(FATENTRYCOUNT-1))/FATENTRYCOUNT;
-
-
-//  copyFAT(FAT, numOfFatBlocks);
-//  writeblock(&block, 1);
-
+  // Copies he FAT to Virtual Disk blocks
+  copyFAT();
 
 
   /* prepare root directory
   * write root directory block to virtual disk
   */
+
+
 }
 
 
