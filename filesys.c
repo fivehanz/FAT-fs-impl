@@ -78,6 +78,7 @@ void copyFAT() {
   for (i = 0; i < numOfFatBlocks; i++) {
     for (j = 0; j < FATENTRYCOUNT; j++) {
       block.fat[j] = FAT[((i*FATENTRYCOUNT)+j)];
+      
     }
     writeblock(&block, i + 1);
   }
