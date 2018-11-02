@@ -92,7 +92,7 @@ void format ( )
   direntry_t  rootDir ;
   int         pos             = 0 ;
   int         fatentry        = 0 ;
-  int         fatblocksneeded =  (MAXBLOCKS / FATENTRYCOUNT ) ;
+  int         fatblocksneeded =  (MAXBLOCKS / FATENTRYCOUNT );
 
   /* prepare block 0 : fill it with '\0',
   * use strcpy() to copy some text to it for test purposes
@@ -131,6 +131,42 @@ void format ( )
 }
 
 
+/*
+* Opens a file on virtual disk and manages a bufer for it of size BLOCKSIZE,
+* mode may be either 'r' for readonly or 'w' for read/write/append (default "w")
+*/
+
+MyFILE *myfopen(const char *filename, const char *mode) {
+
+}
+
+/*
+* Returns the next byte of the open file, or EOF (EOF == -1)
+*/
+
+int myfgetc(MyFILE *stream) {
+
+}
+
+/*
+* Writes a byte to the file. Depending ont the write policy, 
+* either writes the disk block containing the written byte to disk, or waits until block is full.
+*/
+
+void myfputc(MyFILE *stream) {
+
+}
+
+/*
+* this function will create a new directory, using path, e.g. mymkdir (“/first/second/third”) creates
+* directory “third” in parent dir “second”, which is a subdir of directory “first”, and “first is a sub
+* directory of the root directory
+*/
+
+void mymkdir(const char *path) {
+
+}
+
 /* use this for testing
  */
 
@@ -138,3 +174,5 @@ void printBlock ( int blockIndex )
 {
    printf ( "virtualdisk[%d] = %s\n", blockIndex, virtualDisk[blockIndex].data ) ;
 }
+
+
