@@ -106,7 +106,9 @@ void format ( )
   * write FAT blocks to virtual disk
   */
   for (int i = 0; i < BLOCKSIZE; i++) FAT[i] = UNUSED;
+
   FAT[0] = ENDOFCHAIN;
+
   FAT[1] = 2;
   FAT[2] = ENDOFCHAIN;
 
@@ -137,6 +139,8 @@ void format ( )
 */
 
 MyFILE *myfopen(const char *filename, const char *mode) {
+
+  diskblock_t block;
 
 }
 
