@@ -78,7 +78,7 @@ void copyFAT() {
   for (i = 0; i < numOfFatBlocks; i++) {
     for (j = 0; j < FATENTRYCOUNT; j++) {
       block.fat[j] = FAT[((i*FATENTRYCOUNT)+j)];
-      
+      printf("FAT-BLOCK %d\t FAT[%d]: %X \n", i, ((i*FATENTRYCOUNT)+j), FAT[((i*FATENTRYCOUNT)+j)]);
     }
     writeblock(&block, i + 1);
   }
@@ -86,8 +86,7 @@ void copyFAT() {
 
 /* implement format()
  */
-void format ( )
-{
+void format ( ) {
   diskblock_t block ;
   direntry_t  rootDir ;
   int         pos             = 0 ;
@@ -114,8 +113,9 @@ void format ( )
 
   FAT[3] = ENDOFCHAIN;
 
-  // Copies he FAT to Virtual Disk blocks
+  // Copies the FAT to Virtual Disk blocks
   copyFAT();
+
 
 
   /* prepare root directory
@@ -132,7 +132,7 @@ void format ( )
 
 }
 
-
+// CGS C
 /*
 * Opens a file on virtual disk and manages a bufer for it of size BLOCKSIZE,
 * mode may be either 'r' for readonly or 'w' for read/write/append (default "w")
@@ -141,7 +141,72 @@ void format ( )
 MyFILE *myfopen(const char *filename, const char *mode) {
 
   diskblock_t block;
+  int pos;
 
+  // Allocate file space
+  MyFILE * file = malloc(sizeof(MyFILE));
+
+  strcpy(file->mode, mode);
+
+  block = virtualDisk[rootDirIndex];
+
+
+
+//  hexDump("file", &file, sizeof(MyFILE));
+
+
+}
+
+void hexDump (char *desc, void *addr, int len) {
+    int i;
+    unsigned char buff[17];
+    unsigned char *pc = (unsigned char*)addr;
+
+    // Output description if given.
+    if (desc != NULL)
+        printf ("%s:\n", desc);
+
+    if (len == 0) {
+        printf("  ZERO LENGTH\n");
+        return;
+    }
+    if (len < 0) {
+        printf("  NEGATIVE LENGTH: %i\n",len);
+        return;
+    }
+
+    // Process every byte in the data.
+    for (i = 0; i < len; i++) {
+        // Multiple of 16 means new line (with line offset).
+
+        if ((i % 16) == 0) {
+            // Just don't print ASCII for the zeroth line.
+            if (i != 0)
+                printf ("  %s\n", buff);
+
+            // Output the offset.
+            printf ("  %04x ", i);
+        }
+
+        // Now the hex code for the specific character.
+        printf (" %02x", pc[i]);
+
+        // And store a printable ASCII character for later.
+        if ((pc[i] < 0x20) || (pc[i] > 0x7e))
+            buff[i % 16] = '.';
+        else
+            buff[i % 16] = pc[i];
+        buff[(i % 16) + 1] = '\0';
+    }
+
+    // Pad out last line if not exactly 16 characters.
+    while ((i % 16) != 0) {
+        printf ("   ");
+        i++;
+    }
+
+    // And print the final ASCII bit.
+    printf ("  %s\n", buff);
 }
 
 /*
@@ -153,7 +218,7 @@ int myfgetc(MyFILE *stream) {
 }
 
 /*
-* Writes a byte to the file. Depending ont the write policy, 
+* Writes a byte to the file. Depending ont the write policy,
 * either writes the disk block containing the written byte to disk, or waits until block is full.
 */
 
@@ -161,6 +226,16 @@ void myfputc(MyFILE *stream) {
 
 }
 
+/*
+* Closes the file, writes out any blocks not written to disk
+*/
+
+void myfclose(MyFILE *stream) {
+
+}
+
+
+/// CGS B
 /*
 * this function will create a new directory, using path, e.g. mymkdir (“/first/second/third”) creates
 * directory “third” in parent dir “second”, which is a subdir of directory “first”, and “first is a sub
@@ -178,5 +253,3 @@ void printBlock ( int blockIndex )
 {
    printf ( "virtualdisk[%d] = %s\n", blockIndex, virtualDisk[blockIndex].data ) ;
 }
-
-

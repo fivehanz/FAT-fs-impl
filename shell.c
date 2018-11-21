@@ -4,6 +4,7 @@
 
 void main(int argc, char const *argv[]) {
   format();
-  writedisk("virtualdiskD3_D1");
+  writedisk("virtualdiskC3_C1");
 
+  //myfopen("file.txt", "w");
 }
