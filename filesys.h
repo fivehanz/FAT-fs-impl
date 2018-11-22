@@ -26,7 +26,7 @@
 
 #define UNUSED        -1
 #define ENDOFCHAIN     0
-//#define EOF           -1
+#define EOF           -1
 
 
 typedef unsigned char Byte ;
@@ -102,6 +102,10 @@ typedef struct filedescriptor {
 
 void format() ;
 void writedisk ( const char * filename ) ;
+MyFILE *myfopen(const char *filename, const char *mode);
+void myfputc(int b, MyFILE * stream);
+void myfclose(MyFILE *stream);
+int myfgetc(MyFILE *stream);
 
 
 #endif

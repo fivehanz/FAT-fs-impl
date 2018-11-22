@@ -78,7 +78,7 @@ void copyFAT() {
   for (i = 0; i < numOfFatBlocks; i++) {
     for (j = 0; j < FATENTRYCOUNT; j++) {
       block.fat[j] = FAT[((i*FATENTRYCOUNT)+j)];
-      printf("FAT-BLOCK %d\t FAT[%d]: %X \n", i, ((i*FATENTRYCOUNT)+j), FAT[((i*FATENTRYCOUNT)+j)]);
+    //  printf("FAT-BLOCK %d\t FAT[%d]: %X \n", i, ((i*FATENTRYCOUNT)+j), FAT[((i*FATENTRYCOUNT)+j)]);
     }
     writeblock(&block, i + 1);
   }
@@ -98,7 +98,7 @@ void format ( ) {
   * write block 0 to virtual disk
   */
   for (int i = 0; i < BLOCKSIZE; i++) block.data[i] = '\0';
-  strcpy(block.data, "CS3026 Operating Systems Assesment");
+  strcpy(block.data, "CS3026 Operating Systems Assessment");
   writeblock(&block, 0);
 
   /* prepare FAT table
@@ -141,80 +141,69 @@ void format ( ) {
 MyFILE *myfopen(const char *filename, const char *mode) {
 
   diskblock_t block;
-  int pos;
+  int pos = 0;
+  int f = FALSE;
 
   // Allocate file space
   MyFILE * file = malloc(sizeof(MyFILE));
 
+  // Copy the mode to file meta data
   strcpy(file->mode, mode);
 
+  // load the block
   block = virtualDisk[rootDirIndex];
+  for (int i = 0; i < DIRENTRYCOUNT; i++) block.dir.entrylist[0].unused = TRUE;
 
 
+  // Loop in possible 3 DirEntries to see if file exists
+  for(int i = 0; i < DIRENTRYCOUNT; i++) {
+    if (strcmp(block.dir.entrylist[i].name, filename) == 0) {
+      f = TRUE;
+      pos = i;
+      break;
+    }
+  }
 
-//  hexDump("file", &file, sizeof(MyFILE));
+  // Create File metadata if file doesn't exist
+  if (f != TRUE) {
+    int dir;
+    for (dir = 0; dir < DIRENTRYCOUNT; dir++) {
+      if (block.dir.entrylist[dir].unused == TRUE) break;
+    }
+    for (pos = 0; pos < MAXBLOCKS; pos++)
+      if (FAT[pos] == UNUSED) break;
+    FAT[pos] = ENDOFCHAIN;
+    file->blockno = pos;
+    block.dir.entrylist[dir].firstblock = pos;
+    copyFAT();
+    strcpy(block.dir.entrylist[dir].name, filename);
+    block.dir.entrylist[dir].unused = FALSE;
 
+    writeblock(&block, rootDirIndex);
+  }
+  else {
+    file->blockno = block.dir.entrylist[pos].firstblock;
+    file->pos = 0;
+  }
 
+  return file;
 }
 
-void hexDump (char *desc, void *addr, int len) {
-    int i;
-    unsigned char buff[17];
-    unsigned char *pc = (unsigned char*)addr;
-
-    // Output description if given.
-    if (desc != NULL)
-        printf ("%s:\n", desc);
-
-    if (len == 0) {
-        printf("  ZERO LENGTH\n");
-        return;
-    }
-    if (len < 0) {
-        printf("  NEGATIVE LENGTH: %i\n",len);
-        return;
-    }
-
-    // Process every byte in the data.
-    for (i = 0; i < len; i++) {
-        // Multiple of 16 means new line (with line offset).
-
-        if ((i % 16) == 0) {
-            // Just don't print ASCII for the zeroth line.
-            if (i != 0)
-                printf ("  %s\n", buff);
-
-            // Output the offset.
-            printf ("  %04x ", i);
-        }
-
-        // Now the hex code for the specific character.
-        printf (" %02x", pc[i]);
-
-        // And store a printable ASCII character for later.
-        if ((pc[i] < 0x20) || (pc[i] > 0x7e))
-            buff[i % 16] = '.';
-        else
-            buff[i % 16] = pc[i];
-        buff[(i % 16) + 1] = '\0';
-    }
-
-    // Pad out last line if not exactly 16 characters.
-    while ((i % 16) != 0) {
-        printf ("   ");
-        i++;
-    }
-
-    // And print the final ASCII bit.
-    printf ("  %s\n", buff);
-}
 
 /*
 * Returns the next byte of the open file, or EOF (EOF == -1)
 */
 
 int myfgetc(MyFILE *stream) {
+  if (stream->blockno == ENDOFCHAIN || strcmp(stream->mode, "r") != 0)
+    return EOF;
 
+  if (stream->pos % BLOCKSIZE == 0) {
+    memcpy(&stream->buffer, &virtualDisk[stream->blockno], BLOCKSIZE);
+    stream->blockno = FAT[stream->blockno];
+    stream->pos = 0;
+  }
+  return stream->buffer.data[stream->pos++];
 }
 
 /*
@@ -222,7 +211,64 @@ int myfgetc(MyFILE *stream) {
 * either writes the disk block containing the written byte to disk, or waits until block is full.
 */
 
-void myfputc(MyFILE *stream) {
+void myfputc(int b, MyFILE * stream) {
+
+  if (strcmp(stream->mode, "r") == 0)
+        return;
+
+  int zpos;
+  int i = 0;
+  int f = FALSE;
+
+  zpos = stream->blockno;
+
+  while(TRUE) {
+    if (FAT[zpos] == ENDOFCHAIN) {
+      f = TRUE;
+      break;
+    } else {
+      zpos = FAT[zpos];
+    }
+  }
+
+  stream->buffer = virtualDisk[zpos];
+
+  //finds end position of data in block
+  for(i=0; i<BLOCKSIZE; i++){
+    if(stream->buffer.data[i] == '\0'){
+      //pos is the position in the block that is free/where to start placing more data
+      stream->pos = i;
+      break;
+    }
+  }
+
+  // add new data to the open file block
+  stream->buffer.data[stream->pos]= (Byte) b;
+
+  // write buffer block to the virtualDisk
+  writeblock(&stream->buffer, zpos);
+
+
+
+  // increment end position
+  stream->pos++;
+
+// looks to see if at the end of block and finds next free pos in FAT
+  if(stream->pos==BLOCKSIZE){
+    stream->pos=0;
+    for(i=0; i<BLOCKSIZE; i++)
+      if(FAT[i]==UNUSED)
+        break;
+
+    //set next position in fat and write to virtual disk
+    FAT[zpos] = i;
+    FAT[i] = ENDOFCHAIN;
+    copyFAT();
+  }
+
+  //clear the buffer block for new data
+  for(i=0; i<MAXBLOCKS; i++)
+    stream->buffer.data[i] = '\0';
 
 }
 
@@ -231,8 +277,20 @@ void myfputc(MyFILE *stream) {
 */
 
 void myfclose(MyFILE *stream) {
+  int next;
+  for (int i = rootDirIndex + 1; i < MAXBLOCKS; i++) {
+    if (FAT[i] == UNUSED) {
+      next = i;
+      break;
+    }
+  }
+
+  FAT[next] = ENDOFCHAIN;
+  copyFAT();
+  free(stream);
 
 }
+
 
 
 /// CGS B
