@@ -125,6 +125,9 @@ void format ( ) {
   block.dir.isdir = 1;
   block.dir.nextEntry = 0;
 
+
+  for (int i = 0; i < DIRENTRYCOUNT; i++) block.dir.entrylist[0].unused = TRUE;
+
   writeblock(&block, 3);
 
   rootDirIndex = 3;
@@ -152,7 +155,7 @@ MyFILE *myfopen(const char *filename, const char *mode) {
 
   // load the block
   block = virtualDisk[rootDirIndex];
-  for (int i = 0; i < DIRENTRYCOUNT; i++) block.dir.entrylist[0].unused = TRUE;
+
 
 
   // Loop in possible 3 DirEntries to see if file exists
@@ -188,6 +191,7 @@ MyFILE *myfopen(const char *filename, const char *mode) {
 
   return file;
 }
+
 
 
 /*
@@ -247,9 +251,6 @@ void myfputc(int b, MyFILE * stream) {
 
   // write buffer block to the virtualDisk
   writeblock(&stream->buffer, zpos);
-
-
-
   // increment end position
   stream->pos++;
 

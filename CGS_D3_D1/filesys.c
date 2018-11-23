@@ -98,7 +98,7 @@ void format ( )
   * write block 0 to virtual disk
   */
   for (int i = 0; i < BLOCKSIZE; i++) block.data[i] = '\0';
-  strcpy(block.data, "CS3026 Operating Systems Assesment");
+  strcpy(block.data, "CS3026 Operating Systems Assessment");
   writeblock(&block, 0);
 
   /* prepare FAT table
